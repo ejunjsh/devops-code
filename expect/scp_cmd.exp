@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+##############################################################################
+#    execute default commands:
+#       /usr/bin/expect xxxcmd.exp <file_name> <remote_ip> <target_folder>
+#   
+#
+###############################################################################
+set timeout 60
+set file [lindex $argv 0]
+set ip [lindex $argv 1]
+set folder [lindex $argv 2]
+
+if {[file isfile ~/.ssh/known_hosts]==1} {
+  system "sed -i \"/$ip/d\" ~/.ssh/known_hosts"
+}
+
+#send"$file"
+spawn scp -o PubkeyAuthentication=no $file  root@$ip:$folder
+  expect {
+    "yes/no" { send "yes\r"; exp_continue }
+    "assword:" { send "wapwap12\r" }
+
+  }
+#expect "100%" 
+expect eof
