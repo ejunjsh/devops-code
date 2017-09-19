@@ -1,2 +1,2 @@
-# redis-autoscale
-coding..
+# devops-code
+a playground for devops
