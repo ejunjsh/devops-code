@@ -1,0 +1,81 @@
+#!/usr/bin/expect -f
+###############################################################################
+# Usage:
+#    1. execute default commands
+#       /usr/bin/expect ses_vm_cmd.exp <remote_ip> <vm_name> 
+#    2. execute commands defined in commands.txt file
+#       /usr/bin/expect ses_vm_cmd.exp <remote_ip> <vm_name> cmd
+#    3. execute provided command
+#       /usr/bin/expect ses_vm_cmd.exp <remote_ip> <vm_name> cmd <command_name>
+#
+###############################################################################
+
+set timeout 200
+set ip [lindex $argv 0]
+set vm [lindex $argv 1]
+set cmd [lindex $argv 2]
+set cmdName [lindex $argv 3]
+
+if { $cmd == "" } {
+  spawn scp -o PubkeyAuthentication=no  init.properties  root@$ip:/opt/miep/tools/mnsetup/
+  expect {
+    "yes/no" { send "yes\r"; exp_continue }
+    "assword:" { send "wapwap12\r" }
+  }
+#  spawn scp -o PubkeyAuthentication=no  SESConfig.json root@$ip:/tmp
+#  expect {
+#    "yes/no" { send "yes\r"; exp_continue }
+#    "assword:" { send "wapwap12\r" }
+#  }
+}
+
+spawn sed -i /^$ip/d /root/.ssh/known_hosts
+
+sleep 10
+
+#spawn ssh root@$ip -o PubkeyAuthentication=no
+spawn ssh root@$ip -o StrictHostKeyChecking=no
+expect {
+  "yes/no" { send "yes\r"; exp_continue }
+  "assword:" { send "wapwap12\r" }
+}
+
+# Default command
+if { $cmd == "" } {
+ expect {
+    "#" { send "cd /opt/miep/tools/mnsetup/\r" }
+  }
+
+  expect {
+    "#" { send "sh initmn.sh system > /dev/null 2>&1\r" }
+  }
+  expect {
+    "#" { send "sh initmn.sh app > /dev/null 2>&1\r" }
+  }
+} else {
+
+  # execute commands from commands.cm
+  if { $cmdName == "" } {
+    set f [open "commands.sea"]
+    set commands [split [read $f] "\r"]
+    close $f
+    foreach command $commands {
+      puts "sending $command"
+      sleep 1
+      expect "#"
+      send "$command\r"
+    }
+  } else {
+    expect {
+      "#" { send "$cmdName\r" }
+    }
+  }
+}
+
+expect {
+  "#" { send "exit\r" }
+}
+
+expect eof
+
+
